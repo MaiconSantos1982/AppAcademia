@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Exercícios - AppAcademia</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/sidebar.css">
+</head>
+<body>
+  <div class="d-flex">
+    <!-- SIDEBAR -->
+    <nav class="bg-light border-end sidebar" style="width:220px; min-height:100vh;">
+      <div class="sidebar-header p-3 border-bottom"><strong>AppAcademia</strong></div>
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item"><a href="dashboard-academia.html">Dashboard</a></li>
+        <li class="list-group-item"><a href="alunos.html">Alunos</a></li>
+        <li class="list-group-item"><a href="treinos-prontos.html">Treinos Prontos</a></li>
+        <li class="list-group-item"><a href="exercicios.html">Exercícios</a></li>
+        <li class="list-group-item"><a href="logout.html">Sair</a></li>
+      </ul>
+      <div class="sidebar-footer p-3 border-top text-center">
+        <span id="nomeAcademiaSidebar">Nome Academia</span>
+      </div>
+    </nav>
+    <!-- MAIN -->
+    <main class="flex-grow-1 p-4">
+      <div class="container p-4">
+        <h2 class="mb-4">Exercícios</h2>
+        <!-- Busca e botão cadastrar -->
+        <div class="d-flex mb-3 gap-2">
+          <input type="text" id="buscaExercicio" class="form-control" placeholder="Buscar exercício...">
+          <button type="button" class="btn btn-success" onclick="abrirCadastroExercicio()">Cadastrar exercício da academia</button>
+        </div>
+        <!-- Tabs Geral / Academia -->
+        <ul class="nav nav-tabs mb-3" id="tabTipoExercicio" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="tabGeral" data-bs-toggle="tab" data-bs-target="#paneGeral" type="button" role="tab">Geral</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tabAcademia" data-bs-toggle="tab" data-bs-target="#paneAcademia" type="button" role="tab">Exclusivo academia</button>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="paneGeral" role="tabpanel">
+            <table class="table table-striped align-middle">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Grupo muscular</th>
+                  <th>Vídeo</th>
+                </tr>
+              </thead>
+              <tbody id="listaExerciciosGeral"></tbody>
+            </table>
+          </div>
+          <div class="tab-pane fade" id="paneAcademia" role="tabpanel">
+            <table class="table table-striped align-middle">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Grupo muscular</th>
+                  <th>Vídeo</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="listaExerciciosAcademia"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="exerciciosError" class="text-danger mt-2"></div>
+        <!-- Modal cadastro/edição -->
+        <div class="modal fade" id="modalExercicio" tabindex="-1">
+          <div class="modal-dialog">
+            <form class="modal-content" id="formExercicio">
+              <div class="modal-header">
+                <h5 class="modal-title" id="tituloModalExercicio">Cadastrar Exercício</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <input type="hidden" id="exercicioId">
+                <input type="text" class="form-control mb-2" id="nome" placeholder="Nome" required>
+                <input type="text" class="form-control mb-2" id="grupo_muscular" placeholder="Grupo muscular" required>
+                <input type="url" class="form-control mb-2" id="video_url" placeholder="Link vídeo (opcional)">
+                <textarea class="form-control mb-2" id="descricao" placeholder="Descrição (opcional)"></textarea>
+              </div>
+              <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Salvar</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/exercicios.js"></script>
+</body>
+</html>
