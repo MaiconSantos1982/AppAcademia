@@ -12,26 +12,9 @@
     <h2 class="mb-4">Cadastrar Treino para Aluno</h2>
     <div id="cadastroTreinoError" class="text-danger mb-3"></div>
     <div id="alunoInfo" class="mb-3"></div>
-
-    <form id="formTipoTreino" class="mb-4">
-      <p><strong>Tipo de treino:</strong></p>
-      <div class="form-check form-check-inline">
-        <input class="form-check-input" type="radio" name="tipoTreino" id="treinoPronto" value="pronto" checked>
-        <label class="form-check-label" for="treinoPronto">Treino Pronto</label>
-      </div>
-      <div class="form-check form-check-inline">
-        <input class="form-check-input" type="radio" name="tipoTreino" id="treinoPersonalizado" value="personalizado">
-        <label class="form-check-label" for="treinoPersonalizado">Treino Personalizado</label>
-      </div>      
-    </form>
-
-    <div id="areaTreinoPronto" class="mb-4">
-      <label for="selectTreinoPronto" class="form-label">Escolha um treino pronto:</label>
-      <select id="selectTreinoPronto" class="form-select"></select>
-    </div>
     
-    <!-- Área do treino personalizado -->
-    <div id="areaPersonalizado" class="mb-4" style="display:none;">
+    <!-- Área do treino personalizado (sem opções de tipo) -->
+    <div id="areaPersonalizado" class="mb-4">
       <div id="listarTreinosLetras"></div>
       <button type="button" id="btnAdicionarLetra" class="btn btn-secondary btn-sm mt-2">Adicionar Treino</button>
     </div>
