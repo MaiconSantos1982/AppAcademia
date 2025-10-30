@@ -2,9 +2,10 @@ let academiaId = null;
 let alunoId = null;
 let aluno = null;
 let treinosProntos = [];
-let exerciciosAcademia = [];
-let exerciciosGeral = [];
+let exerciciosDisponiveis = [];
+let gruposMusculares = [];
 let letrasPersonalizadas = [];
+let modalBootstrap = null;
 
 // Pega academia e aluno logado
 async function getAcademiaId() {
@@ -42,16 +43,54 @@ async function carregarTreinosProntos() {
   ).join('');
 }
 
+// Carrega exercícios apenas de exercicios_geral
 async function carregarExercicios() {
-  const { data: geral } = await supabase
+  const { data, error } = await supabase
     .from('exercicios_geral')
-    .select('*');
-  exerciciosGeral = geral || [];
-  const { data: academia } = await supabase
-    .from('exercicios_academia')
-    .select('*')
-    .eq('academia_id', academiaId);
-  exerciciosAcademia = academia || [];
+    .select('id, nome, grupo_muscular')
+    .order('nome');
+  
+  if (error) {
+    console.error('Erro ao carregar exercícios:', error);
+    return;
+  }
+  
+  exerciciosDisponiveis = data || [];
+  carregarGruposMusculares();
+}
+
+// Carrega grupos musculares únicos
+function carregarGruposMusculares() {
+  gruposMusculares = [...new Set(exerciciosDisponiveis.map(e => e.grupo_muscular))].filter(Boolean).sort();
+  
+  const selectGrupo = document.getElementById('selectGrupoMuscular');
+  selectGrupo.innerHTML = '<option value="todos">Todos</option>';
+  gruposMusculares.forEach(grupo => {
+    selectGrupo.innerHTML += `<option value="${grupo}">${grupo}</option>`;
+  });
+  
+  // Adiciona listener de mudança
+  selectGrupo.addEventListener('change', filtrarExerciciosPorGrupo);
+  
+  // Renderiza inicialmente com "Todos"
+  filtrarExerciciosPorGrupo();
+}
+
+// Filtra exercícios baseado no grupo selecionado
+function filtrarExerciciosPorGrupo() {
+  const grupoSelecionado = document.getElementById('selectGrupoMuscular').value;
+  const selectExercicio = document.getElementById('selectExercicio');
+  
+  let exerciciosFiltrados = exerciciosDisponiveis;
+  
+  if (grupoSelecionado !== 'todos') {
+    exerciciosFiltrados = exerciciosDisponiveis.filter(e => e.grupo_muscular === grupoSelecionado);
+  }
+  
+  selectExercicio.innerHTML = '<option value="">Selecione um exercício</option>';
+  exerciciosFiltrados.forEach(ex => {
+    selectExercicio.innerHTML += `<option value="${ex.id}">${ex.nome} [${ex.grupo_muscular}]</option>`;
+  });
 }
 
 // Alternância tipo de treino
@@ -63,8 +102,12 @@ document.getElementById('formTipoTreino').addEventListener('change', () => {
 
 // Adicionar letra (A, B, ...)
 document.getElementById('btnAdicionarLetra').addEventListener('click', () => {
-  const letra = String.fromCharCode(65 + letrasPersonalizadas.length); // A, B, C...
-  letrasPersonalizadas.push({ letra, exercicios: [] });
+  const letra = String.fromCharCode(65 + letrasPersonalizadas.length);
+  letrasPersonalizadas.push({ 
+    letra, 
+    nome: `Treino ${letra}`,
+    exercicios: [] 
+  });
   renderLetrasPersonalizadas();
 });
 
@@ -73,23 +116,39 @@ function renderLetrasPersonalizadas() {
   const div = document.getElementById('listarTreinosLetras');
   div.innerHTML = letrasPersonalizadas.map((t, idx) => {
     return `
-      <div class="card mb-2">
+      <div class="card mb-3">
         <div class="card-body">
-          <h6>Treino ${t.letra}</h6>
+          <div class="d-flex align-items-center mb-3">
+            <input type="text" class="form-control" value="${t.nome}" 
+              onchange="atualizarNomeTreino(${idx}, this.value)" 
+              placeholder="Nome do treino">
+          </div>
           <div id="listaExercicios${idx}">
             ${t.exercicios.map((e, i) =>
-              `<div>
-                ${e.nome} - Séries: ${e.series} - Rep: ${Array.isArray(e.repeticoes) ? e.repeticoes.join(',') : e.repeticoes}
-                <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="removerExercicio(${idx},${i})">Remover</button>
+              `<div class="d-flex align-items-center mb-2 p-2 bg-light rounded">
+                <span class="flex-grow-1">
+                  <strong>${e.nome}</strong><br>
+                  <small>Séries: ${e.repeticoes.length} | Repetições: ${e.repeticoes.join(', ')}</small>
+                </span>
+                <button type="button" class="btn btn-sm btn-danger" onclick="removerExercicio(${idx},${i})">
+                  <i class="bi bi-trash"></i> Remover
+                </button>
               </div>`
             ).join('')}
           </div>
-          <button type="button" class="btn btn-sm btn-outline-success mt-2" onclick="abrirAdicionarExercicio(${idx})">Adicionar Exercício</button>
+          <button type="button" class="btn btn-success mt-2" onclick="abrirModalExercicio(${idx})">
+            <i class="bi bi-plus-circle"></i> Adicionar Exercício
+          </button>
         </div>
       </div>
     `;
   }).join('');
 }
+
+// Atualizar nome do treino
+window.atualizarNomeTreino = function(idx, novoNome) {
+  letrasPersonalizadas[idx].nome = novoNome;
+};
 
 // Remover exercício do treino/letra
 window.removerExercicio = function(tIndex, eIndex) {
@@ -97,67 +156,77 @@ window.removerExercicio = function(tIndex, eIndex) {
   renderLetrasPersonalizadas();
 };
 
-// Adicionar exercício (modal dinâmico dentro da letra)
-window.abrirAdicionarExercicio = function(tIndex) {
-  const lista = [...exerciciosGeral.map(e => ({ ...e, tipo: 'geral' })), ...exerciciosAcademia.map(e => ({ ...e, tipo: 'academia' }))];
-  const opts = lista.map(e => `<option value="${e.id},${e.tipo}">${e.nome} [${e.grupo_muscular}]</option>`).join('');
-  const idUnico = Math.random().toString(36).substr(2, 6); // para identificar os campos dinamicamente
-  const html = `
-    <form id="formAddExercicio${idUnico}">
-      <div class="mb-2">
-        <label>Exercício:</label>
-        <select id="exercicioAdd${idUnico}" class="form-select" required>${opts}</select>
-      </div>
-      <div class="mb-2">
-        <label>Séries:</label>
-        <select id="seriesAdd${idUnico}" class="form-select" required>
-          <option value="">Séries</option>
-          ${[...Array(15)].map((_, i) => `<option value="${i+1}">${i+1}</option>`).join('')}
-        </select>
-      </div>
-      <div class="mb-2" id="repeticoesAddContainer${idUnico}"></div>
-      <button type="submit" class="btn btn-primary mt-2">Adicionar</button>
-    </form>
-  `;
-  const d = document.createElement('div');
-  d.innerHTML = html;
-  d.className = "p-3 bg-light border mb-3";
-  const card = document.getElementById('listarTreinosLetras').children[tIndex].children[0];
-  card.appendChild(d);
+// Abrir modal para adicionar exercício
+window.abrirModalExercicio = function(tIndex) {
+  document.getElementById('treinoLetraAtual').value = tIndex;
+  
+  // Define o nome padrão no input
+  const nomeTreino = letrasPersonalizadas[tIndex].nome;
+  document.getElementById('inputNomeTreino').value = nomeTreino;
+  
+  // Limpa os campos
+  document.getElementById('selectGrupoMuscular').value = 'todos';
+  document.getElementById('inputSeries').value = '';
+  filtrarExerciciosPorGrupo();
+  
+  // Abre o modal
+  if (!modalBootstrap) {
+    modalBootstrap = new bootstrap.Modal(document.getElementById('modalAdicionarExercicio'));
+  }
+  modalBootstrap.show();
+};
 
-  // Quando mudar séries, cria os campos de repetições
-  d.querySelector(`#seriesAdd${idUnico}`).addEventListener('change', function() {
-    const n = Number(this.value);
-    const repsCont = d.querySelector(`#repeticoesAddContainer${idUnico}`);
-    repsCont.innerHTML = '';
-    for (let i = 1; i <= n; i++) {
-      repsCont.innerHTML += `<input type="number" class="form-control mb-1" name="repeticao_${i}" placeholder="Repetições da série ${i}" min="1" max="99" required>`;
-    }
+// Adicionar exercício ao treino
+window.adicionarExercicioAoTreino = function() {
+  const tIndex = Number(document.getElementById('treinoLetraAtual').value);
+  const nomeTreino = document.getElementById('inputNomeTreino').value.trim();
+  const exercicioId = document.getElementById('selectExercicio').value;
+  const seriesInput = document.getElementById('inputSeries').value.trim();
+  
+  if (!exercicioId) {
+    alert('Selecione um exercício!');
+    return;
+  }
+  
+  if (!seriesInput) {
+    alert('Digite as séries (ex: 12,10,8,8)');
+    return;
+  }
+  
+  // Atualiza o nome do treino
+  if (nomeTreino) {
+    letrasPersonalizadas[tIndex].nome = nomeTreino;
+  }
+  
+  // Processa as séries (repetições)
+  const repeticoes = seriesInput.split(',').map(s => s.trim()).filter(Boolean);
+  
+  if (repeticoes.length === 0) {
+    alert('Formato inválido de séries. Use: 12,10,8,8');
+    return;
+  }
+  
+  // Pega o nome do exercício
+  const exercicio = exerciciosDisponiveis.find(e => e.id === exercicioId);
+  
+  letrasPersonalizadas[tIndex].exercicios.push({
+    id: exercicioId,
+    nome: exercicio.nome,
+    tipo: 'geral',
+    repeticoes: repeticoes
   });
-
-  // Ao enviar, coleta todas as repetições individualmente
-  d.querySelector(`#formAddExercicio${idUnico}`).onsubmit = function(e) {
-    e.preventDefault();
-    const [id, tipo] = d.querySelector(`#exercicioAdd${idUnico}`).value.split(',');
-    const nome = lista.find(e => e.id === id).nome;
-    const series = Number(d.querySelector(`#seriesAdd${idUnico}`).value);
-    const repeticoes = [];
-    for (let i = 1; i <= series; i++) {
-      repeticoes.push(d.querySelector(`input[name="repeticao_${i}"]`).value);
-    }
-    letrasPersonalizadas[tIndex].exercicios.push({ id, nome, tipo, series, repeticoes });
-    renderLetrasPersonalizadas();
-  };
+  
+  renderLetrasPersonalizadas();
+  modalBootstrap.hide();
 };
 
 // Salvar treino para aluno
 document.getElementById('btnSalvarTreino').addEventListener('click', async () => {
   const tipo = document.querySelector('input[name="tipoTreino"]:checked').value;
-  const dataExpiracao = document.getElementById('dataValidadeTreino') ? document.getElementById('dataValidadeTreino').value : null;
+  const dataExpiracao = document.getElementById('dataValidadeTreino').value || null;
 
   if (tipo === 'pronto') {
     const treinoProntoId = document.getElementById('selectTreinoPronto').value;
-    // Vincula treino pronto ao aluno
     const { error } = await supabase.from('alunos_treinos').insert([{
       aluno_id: alunoId,
       academia_id: academiaId,
@@ -180,7 +249,14 @@ document.getElementById('btnSalvarTreino').addEventListener('click', async () =>
     return;
   }
 
-  // 1. Cadastro treino personalizado
+  // Desativa treinos anteriores
+  await supabase
+    .from('alunos_treinos')
+    .update({ ativo: false })
+    .eq('aluno_id', alunoId)
+    .eq('ativo', true);
+
+  // Cadastra treino personalizado
   const { data, error } = await supabase.from('alunos_treinos').insert([{
     aluno_id: alunoId,
     academia_id: academiaId,
@@ -196,7 +272,7 @@ document.getElementById('btnSalvarTreino').addEventListener('click', async () =>
   }
   const alunoTreinoId = data.id;
 
-  // 2. Cadastro dos exercícios do personalizado
+  // Cadastra os exercícios
   for (let tInd = 0; tInd < letrasPersonalizadas.length; tInd++) {
     const letraObj = letrasPersonalizadas[tInd];
     for (let eInd = 0; eInd < letraObj.exercicios.length; eInd++) {
@@ -205,9 +281,8 @@ document.getElementById('btnSalvarTreino').addEventListener('click', async () =>
         aluno_treino_id: alunoTreinoId,
         treino_letra: letraObj.letra,
         exercicio_id: ex.id,
-        exercicio_tipo: ex.tipo,
+        exercicio_tipo: 'geral',
         ordem: eInd + 1,
-        series: Number(ex.series),
         repeticoes: ex.repeticoes
       }]);
     }
@@ -223,12 +298,4 @@ window.addEventListener('DOMContentLoaded', async () => {
   await carregarAluno();
   await carregarTreinosProntos();
   await carregarExercicios();
-});
-
-// Alternância visibilidade áreas (segurança extra)
-document.querySelectorAll('input[name="tipoTreino"]').forEach(el => {
-  el.addEventListener('change', function() {
-    document.getElementById('areaTreinoPronto').style.display = this.value === 'pronto' ? 'block' : 'none';
-    document.getElementById('areaPersonalizado').style.display = this.value === 'personalizado' ? 'block' : 'none';
-  });
 });
