@@ -4,7 +4,7 @@ let aluno = null;
 let treinosProntos = [];
 let exerciciosDisponiveis = [];
 let gruposMusculares = [];
-let letrasPersonalizadas = [];
+let treinosPersonalizados = [];
 let modalBootstrap = null;
 
 // Pega academia e aluno logado
@@ -69,10 +69,7 @@ function carregarGruposMusculares() {
     selectGrupo.innerHTML += `<option value="${grupo}">${grupo}</option>`;
   });
   
-  // Adiciona listener de mudança
   selectGrupo.addEventListener('change', filtrarExerciciosPorGrupo);
-  
-  // Renderiza inicialmente com "Todos"
   filtrarExerciciosPorGrupo();
 }
 
@@ -100,21 +97,22 @@ document.getElementById('formTipoTreino').addEventListener('change', () => {
   document.getElementById('areaPersonalizado').style.display = tipo === 'personalizado' ? 'block' : 'none';
 });
 
-// Adicionar letra (A, B, ...)
+// Adicionar novo treino
 document.getElementById('btnAdicionarLetra').addEventListener('click', () => {
-  const letra = String.fromCharCode(65 + letrasPersonalizadas.length);
-  letrasPersonalizadas.push({ 
-    letra, 
-    nome: `Treino ${letra}`,
-    exercicios: [] 
+  const novoNome = prompt('Digite o nome do treino:', `Treino ${String.fromCharCode(65 + treinosPersonalizados.length)}`);
+  if (!novoNome) return;
+  
+  treinosPersonalizados.push({
+    nome: novoNome,
+    exercicios: []
   });
-  renderLetrasPersonalizadas();
+  renderTreinosPersonalizados();
 });
 
-// Renderizar letras e exercícios
-function renderLetrasPersonalizadas() {
+// Renderizar treinos e exercícios
+function renderTreinosPersonalizados() {
   const div = document.getElementById('listarTreinosLetras');
-  div.innerHTML = letrasPersonalizadas.map((t, idx) => {
+  div.innerHTML = treinosPersonalizados.map((t, idx) => {
     return `
       <div class="card mb-3">
         <div class="card-body">
@@ -122,13 +120,16 @@ function renderLetrasPersonalizadas() {
             <input type="text" class="form-control" value="${t.nome}" 
               onchange="atualizarNomeTreino(${idx}, this.value)" 
               placeholder="Nome do treino">
+            <button type="button" class="btn btn-sm btn-danger ms-2" onclick="removerTreino(${idx})">
+              <i class="bi bi-trash"></i> Remover
+            </button>
           </div>
           <div id="listaExercicios${idx}">
             ${t.exercicios.map((e, i) =>
               `<div class="d-flex align-items-center mb-2 p-2 bg-light rounded">
                 <span class="flex-grow-1">
                   <strong>${e.nome}</strong><br>
-                  <small>Séries: ${e.repeticoes.length} | Repetições: ${e.repeticoes.join(', ')}</small>
+                  <small>Séries: ${e.series} | Repetições: ${e.repeticoes.join(', ')}</small>
                 </span>
                 <button type="button" class="btn btn-sm btn-danger" onclick="removerExercicio(${idx},${i})">
                   <i class="bi bi-trash"></i> Remover
@@ -147,21 +148,26 @@ function renderLetrasPersonalizadas() {
 
 // Atualizar nome do treino
 window.atualizarNomeTreino = function(idx, novoNome) {
-  letrasPersonalizadas[idx].nome = novoNome;
+  treinosPersonalizados[idx].nome = novoNome;
 };
 
-// Remover exercício do treino/letra
+// Remover treino
+window.removerTreino = function(idx) {
+  if (confirm('Deseja remover este treino e todos os seus exercícios?')) {
+    treinosPersonalizados.splice(idx, 1);
+    renderTreinosPersonalizados();
+  }
+};
+
+// Remover exercício do treino
 window.removerExercicio = function(tIndex, eIndex) {
-  letrasPersonalizadas[tIndex].exercicios.splice(eIndex, 1);
-  renderLetrasPersonalizadas();
+  treinosPersonalizados[tIndex].exercicios.splice(eIndex, 1);
+  renderTreinosPersonalizados();
 };
 
 // Abrir modal para adicionar exercício
 window.abrirModalExercicio = function(tIndex) {
-  document.getElementById('treinoLetraAtual').value = tIndex;
-  
-  const nomeTreino = letrasPersonalizadas[tIndex].nome;
-  document.getElementById('inputNomeTreino').value = nomeTreino;
+  document.getElementById('treinoIndexAtual').value = tIndex;
   
   document.getElementById('selectGrupoMuscular').value = 'todos';
   document.getElementById('selectExercicio').value = '';
@@ -179,10 +185,21 @@ window.abrirModalExercicio = function(tIndex) {
   modalBootstrap.show();
 };
 
+// Fechar modal
+window.fecharModalExercicio = function() {
+  if (modalBootstrap) {
+    modalBootstrap.hide();
+    setTimeout(() => {
+      document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+      document.body.classList.remove('modal-open');
+      document.body.style.removeProperty('padding-right');
+    }, 200);
+  }
+};
+
 // Adicionar exercício ao treino
 window.adicionarExercicioAoTreino = function() {
-  const tIndex = Number(document.getElementById('treinoLetraAtual').value);
-  const nomeTreino = document.getElementById('inputNomeTreino').value.trim();
+  const tIndex = Number(document.getElementById('treinoIndexAtual').value);
   const exercicioId = document.getElementById('selectExercicio').value;
   const seriesInput = document.getElementById('inputSeries').value.trim();
   
@@ -194,10 +211,6 @@ window.adicionarExercicioAoTreino = function() {
   if (!seriesInput) {
     alert('Digite as séries (ex: 12,10,8,8)');
     return;
-  }
-  
-  if (nomeTreino) {
-    letrasPersonalizadas[tIndex].nome = nomeTreino;
   }
   
   const repeticoes = seriesInput.split(',').map(s => s.trim()).filter(Boolean);
@@ -214,26 +227,15 @@ window.adicionarExercicioAoTreino = function() {
     return;
   }
   
-  letrasPersonalizadas[tIndex].exercicios.push({
+  treinosPersonalizados[tIndex].exercicios.push({
     id: exercicioId,
     nome: exercicio.nome,
-    tipo: 'geral',
+    series: repeticoes.length,
     repeticoes: repeticoes
   });
   
-  renderLetrasPersonalizadas();
-  
-  // ✅ Fecha sem erros
-  if (modalBootstrap) {
-    modalBootstrap.hide();
-    
-    // Aguarda um pouco e depois limpa
-    setTimeout(() => {
-      document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-      document.body.classList.remove('modal-open');
-      document.body.style.removeProperty('padding-right');
-    }, 200);
-  }
+  renderTreinosPersonalizados();
+  fecharModalExercicio();
 };
 
 // Salvar treino para aluno
@@ -260,10 +262,8 @@ document.getElementById('btnSalvarTreino').addEventListener('click', async () =>
   }
 
   // Personalizado
-  console.log('Letras personalizadas:', letrasPersonalizadas);
-  
-  if (letrasPersonalizadas.length === 0) {
-    document.getElementById('cadastroTreinoError').textContent = 'Adicione pelo menos um treino/letra e exercício.';
+  if (treinosPersonalizados.length === 0) {
+    document.getElementById('cadastroTreinoError').textContent = 'Adicione pelo menos um treino com exercício.';
     return;
   }
 
@@ -284,8 +284,6 @@ document.getElementById('btnSalvarTreino').addEventListener('click', async () =>
     data_expiracao: dataExpiracao
   }]).select().single();
 
-  console.log('Treino criado:', data, 'Erro:', error);
-
   if (error) {
     document.getElementById('cadastroTreinoError').textContent = error.message;
     return;
@@ -293,30 +291,27 @@ document.getElementById('btnSalvarTreino').addEventListener('click', async () =>
   
   const alunoTreinoId = data.id;
 
-  // Cadastra os exercícios
-  for (let tInd = 0; tInd < letrasPersonalizadas.length; tInd++) {
-    const letraObj = letrasPersonalizadas[tInd];
-    console.log('Salvando letra:', letraObj);
+  // Cadastra os exercícios com nomes personalizados
+  for (let tInd = 0; tInd < treinosPersonalizados.length; tInd++) {
+    const treinoObj = treinosPersonalizados[tInd];
     
-    for (let eInd = 0; eInd < letraObj.exercicios.length; eInd++) {
-      const ex = letraObj.exercicios[eInd];
-      console.log('Salvando exercício:', ex);
+    for (let eInd = 0; eInd < treinoObj.exercicios.length; eInd++) {
+      const ex = treinoObj.exercicios[eInd];
       
-const { error: errEx } = await supabase.from('alunos_treinos_exercicios').insert([{
-  aluno_treino_id: alunoTreinoId,
-  treino_letra: letraObj.letra,
-  exercicio_id: ex.id,
-  exercicio_tipo: 'geral',
-  ordem: eInd + 1,
-  series: eInd + 1,  // Número de séries
-  repeticoes: ex.repeticoes  // Array de repetições
-}]);
+      const { error: errEx } = await supabase.from('alunos_treinos_exercicios').insert([{
+        aluno_treino_id: alunoTreinoId,
+        treino_letra: treinoObj.nome,  // ✅ Salva nome personalizado ao invés de letra
+        exercicio_id: ex.id,
+        exercicio_tipo: 'geral',
+        ordem: eInd + 1,
+        series: ex.series,
+        repeticoes: ex.repeticoes
+      }]);
       
       if (errEx) console.error('Erro ao salvar exercício:', errEx);
     }
   }
 
-  console.log('Treino salvo com sucesso!');
   window.location.href = `aluno-detalhes.html?id=${alunoId}`;
 });
 
