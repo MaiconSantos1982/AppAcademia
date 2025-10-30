@@ -170,9 +170,6 @@ window.abrirModalExercicio = function(tIndex) {
   
   const modalElement = document.getElementById('modalAdicionarExercicio');
   
-  // Remove listeners antigos para evitar duplicação
-  modalElement.removeAttribute('aria-hidden');
-  
   if (!modalBootstrap) {
     modalBootstrap = new bootstrap.Modal(modalElement, {
       backdrop: 'static',
