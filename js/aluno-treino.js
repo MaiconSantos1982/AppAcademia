@@ -166,6 +166,7 @@ window.abrirModalExercicio = function(tIndex) {
   
   // Limpa os campos
   document.getElementById('selectGrupoMuscular').value = 'todos';
+  document.getElementById('selectExercicio').value = '';
   document.getElementById('inputSeries').value = '';
   filtrarExerciciosPorGrupo();
   
@@ -209,6 +210,11 @@ window.adicionarExercicioAoTreino = function() {
   // Pega o nome do exercício
   const exercicio = exerciciosDisponiveis.find(e => e.id === exercicioId);
   
+  if (!exercicio) {
+    alert('Exercício não encontrado!');
+    return;
+  }
+  
   letrasPersonalizadas[tIndex].exercicios.push({
     id: exercicioId,
     nome: exercicio.nome,
@@ -218,7 +224,7 @@ window.adicionarExercicioAoTreino = function() {
   
   renderLetrasPersonalizadas();
   
-  // ✅ CORREÇÃO: Fecha o modal corretamente
+  // ✅ Fecha o modal corretamente
   const modalElement = document.getElementById('modalAdicionarExercicio');
   const modal = bootstrap.Modal.getInstance(modalElement);
   if (modal) {
@@ -255,6 +261,8 @@ document.getElementById('btnSalvarTreino').addEventListener('click', async () =>
   }
 
   // Personalizado
+  console.log('Letras personalizadas:', letrasPersonalizadas);
+  
   if (letrasPersonalizadas.length === 0) {
     document.getElementById('cadastroTreinoError').textContent = 'Adicione pelo menos um treino/letra e exercício.';
     return;
@@ -277,18 +285,25 @@ document.getElementById('btnSalvarTreino').addEventListener('click', async () =>
     data_expiracao: dataExpiracao
   }]).select().single();
 
+  console.log('Treino criado:', data, 'Erro:', error);
+
   if (error) {
     document.getElementById('cadastroTreinoError').textContent = error.message;
     return;
   }
+  
   const alunoTreinoId = data.id;
 
   // Cadastra os exercícios
   for (let tInd = 0; tInd < letrasPersonalizadas.length; tInd++) {
     const letraObj = letrasPersonalizadas[tInd];
+    console.log('Salvando letra:', letraObj);
+    
     for (let eInd = 0; eInd < letraObj.exercicios.length; eInd++) {
       const ex = letraObj.exercicios[eInd];
-      await supabase.from('alunos_treinos_exercicios').insert([{
+      console.log('Salvando exercício:', ex);
+      
+      const { error: errEx } = await supabase.from('alunos_treinos_exercicios').insert([{
         aluno_treino_id: alunoTreinoId,
         treino_letra: letraObj.letra,
         exercicio_id: ex.id,
@@ -296,9 +311,12 @@ document.getElementById('btnSalvarTreino').addEventListener('click', async () =>
         ordem: eInd + 1,
         repeticoes: ex.repeticoes
       }]);
+      
+      if (errEx) console.error('Erro ao salvar exercício:', errEx);
     }
   }
 
+  console.log('Treino salvo com sucesso!');
   window.location.href = `aluno-detalhes.html?id=${alunoId}`;
 });
 
