@@ -217,7 +217,18 @@ window.adicionarExercicioAoTreino = function() {
   });
   
   renderLetrasPersonalizadas();
-  modalBootstrap.hide();
+  
+  // ✅ CORREÇÃO: Fecha o modal corretamente
+  const modalElement = document.getElementById('modalAdicionarExercicio');
+  const modal = bootstrap.Modal.getInstance(modalElement);
+  if (modal) {
+    modal.hide();
+  }
+  
+  // Remove o backdrop manualmente (caso fique travado)
+  document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+  document.body.classList.remove('modal-open');
+  document.body.style.removeProperty('padding-right');
 };
 
 // Salvar treino para aluno
