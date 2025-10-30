@@ -302,14 +302,15 @@ document.getElementById('btnSalvarTreino').addEventListener('click', async () =>
       const ex = letraObj.exercicios[eInd];
       console.log('Salvando exercício:', ex);
       
-      const { error: errEx } = await supabase.from('alunos_treinos_exercicios').insert([{
-        aluno_treino_id: alunoTreinoId,
-        treino_letra: letraObj.letra,
-        exercicio_id: ex.id,
-        exercicio_tipo: 'geral',
-        ordem: eInd + 1,
-        repeticoes: ex.repeticoes
-      }]);
+const { error: errEx } = await supabase.from('alunos_treinos_exercicios').insert([{
+  aluno_treino_id: alunoTreinoId,
+  treino_letra: letraObj.letra,
+  exercicio_id: ex.id,
+  exercicio_tipo: 'geral',
+  ordem: eInd + 1,
+  series: eInd + 1,  // Número de séries
+  repeticoes: ex.repeticoes  // Array de repetições
+}]);
       
       if (errEx) console.error('Erro ao salvar exercício:', errEx);
     }
