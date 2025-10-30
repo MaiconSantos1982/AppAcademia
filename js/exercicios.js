@@ -1,136 +1,143 @@
-// js/exercicios.js
-
 let academiaId = null;
 let exerciciosGeral = [];
 let exerciciosAcademia = [];
+let modalExercicio = null;
 
-const modalExercicio = new bootstrap.Modal(document.getElementById('modalExercicio'));
-
+// Pega academia logada
 async function getAcademiaId() {
   const { data: { user } } = await supabase.auth.getUser();
   academiaId = user?.id;
   if (!academiaId) window.location.href = 'login-academia.html';
 }
 
-// Exercícios Geral (apenas leitura)
-async function carregarExerciciosGeral() {
-  const busca = document.getElementById('buscaExercicio').value.trim().toLowerCase();
-  const { data } = await supabase.from('exercicios_geral').select('*').order('nome', { ascending: true });
+// Carregar exercícios de exercicios_geral
+async function carregarExercicios() {
+  const { data, error } = await supabase
+    .from('exercicios_geral')
+    .select('*')
+    .order('nome');
+
+  if (error) {
+    document.getElementById('exerciciosError').textContent = 'Erro ao carregar exercícios: ' + error.message;
+    return;
+  }
+
+  // Todos os exercícios vão para a lista geral (sem aba academia)
   exerciciosGeral = data || [];
-  let filtrados = exerciciosGeral;
-  if (busca) filtrados = exerciciosGeral.filter(e =>
-    e.nome.toLowerCase().includes(busca) ||
-    (e.grupo_muscular && e.grupo_muscular.toLowerCase().includes(busca))
-  );
-  const tbody = document.getElementById('listaExerciciosGeral');
-  tbody.innerHTML = filtrados.map(e => `
-    <tr>
-      <td>${e.nome}</td>
-      <td>${e.grupo_muscular}</td>
-      <td>${e.video_url ? `<a href="${e.video_url}" target="_blank" class="btn btn-sm btn-info">Vídeo</a>` : '-'}</td>
-    </tr>
-  `).join('');
+  renderizarExercicios();
 }
 
-// Exercícios da academia (CRUD)
-async function carregarExerciciosAcademia() {
-  const busca = document.getElementById('buscaExercicio').value.trim().toLowerCase();
-  const { data } = await supabase
-    .from('exercicios_academia')
-    .select('*')
-    .eq('academia_id', academiaId)
-    .order('nome', { ascending: true });
-  exerciciosAcademia = data || [];
-  let filtrados = exerciciosAcademia;
-  if (busca) filtrados = exerciciosAcademia.filter(e =>
-    e.nome.toLowerCase().includes(busca) ||
+// Renderizar tabela de exercícios
+function renderizarExercicios() {
+  const tbodyGeral = document.getElementById('listaExerciciosGeral');
+  const busca = document.getElementById('buscaExercicio').value.toLowerCase();
+  
+  const filtrados = exerciciosGeral.filter(e => 
+    e.nome.toLowerCase().includes(busca) || 
     (e.grupo_muscular && e.grupo_muscular.toLowerCase().includes(busca))
   );
-  const tbody = document.getElementById('listaExerciciosAcademia');
-  tbody.innerHTML = filtrados.map(e => `
+
+  // Renderiza na aba Geral
+  tbodyGeral.innerHTML = filtrados.map(e => `
     <tr>
-      <td>${e.nome}</td>
-      <td>${e.grupo_muscular}</td>
-      <td>${e.video_url ? `<a href="${e.video_url}" target="_blank" class="btn btn-sm btn-info">Vídeo</a>` : '-'}</td>
+      <td><strong>${e.nome}</strong></td>
+      <td>${e.grupo_muscular || '-'}</td>
       <td>
-        <button class="btn btn-sm btn-secondary" onclick="abrirEditarExercicio('${e.id}')">Editar</button>
-        <button class="btn btn-sm btn-danger" onclick="excluirExercicio('${e.id}')">Excluir</button>
+        ${e.video_url ? `<a href="${e.video_url}" target="_blank" class="btn btn-sm btn-info">Ver vídeo</a>` : '-'}
       </td>
     </tr>
   `).join('');
 }
 
+// Busca em tempo real
+document.getElementById('buscaExercicio').addEventListener('input', renderizarExercicios);
+
+// Abrir modal para cadastro
 window.abrirCadastroExercicio = function() {
+  document.getElementById('exercicioId').value = '';
   document.getElementById('formExercicio').reset();
-  document.getElementById('exercicioId').value = "";
+  document.getElementById('tituloModalExercicio').textContent = 'Cadastrar Exercício';
   modalExercicio.show();
-  document.getElementById('tituloModalExercicio').textContent = "Cadastrar Exercício da academia";
 };
 
-window.abrirEditarExercicio = function(id) {
-  const e = exerciciosAcademia.find(e => e.id === id);
-  if (!e) return;
-  document.getElementById('exercicioId').value = e.id;
-  document.getElementById('nome').value = e.nome || "";
-  document.getElementById('grupo_muscular').value = e.grupo_muscular || "";
-  document.getElementById('video_url').value = e.video_url || "";
-  document.getElementById('descricao').value = e.descricao || "";
+// Editar exercício (não implementado nas abas)
+window.editarExercicio = async function(exercicioId) {
+  const exercicio = exerciciosGeral.find(e => e.id === exercicioId);
+  if (!exercicio) return;
+
+  document.getElementById('exercicioId').value = exercicio.id;
+  document.getElementById('nome').value = exercicio.nome;
+  document.getElementById('grupo_muscular').value = exercicio.grupo_muscular || '';
+  document.getElementById('video_url').value = exercicio.video_url || '';
+  document.getElementById('descricao').value = exercicio.descricao || '';
+  
+  document.getElementById('tituloModalExercicio').textContent = 'Editar Exercício';
   modalExercicio.show();
-  document.getElementById('tituloModalExercicio').textContent = "Editar Exercício";
 };
 
-// CRUD submit
+// Salvar exercício (cadastro ou edição)
 document.getElementById('formExercicio').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const id = document.getElementById('exercicioId').value;
-  const obj = {
-    nome: document.getElementById('nome').value.trim(),
-    grupo_muscular: document.getElementById('grupo_muscular').value.trim(),
-    video_url: document.getElementById('video_url').value.trim(),
-    descricao: document.getElementById('descricao').value.trim(),
-    academia_id: academiaId
-  };
-  let resp;
-  if (id) {
-    resp = await supabase.from('exercicios_academia').update(obj).eq('id', id);
-  } else {
-    resp = await supabase.from('exercicios_academia').insert([obj]);
+
+  const exercicioId = document.getElementById('exercicioId').value;
+  const nome = document.getElementById('nome').value.trim();
+  const grupo_muscular = document.getElementById('grupo_muscular').value.trim();
+  const video_url = document.getElementById('video_url').value.trim() || null;
+  const descricao = document.getElementById('descricao').value.trim() || null;
+
+  if (!nome || !grupo_muscular) {
+    alert('Nome e Grupo muscular são obrigatórios!');
+    return;
   }
+
+  const dados = {
+    nome,
+    grupo_muscular,
+    video_url,
+    descricao
+  };
+
+  let error;
+
+  if (exercicioId) {
+    // Editar
+    ({ error } = await supabase
+      .from('exercicios_geral')
+      .update(dados)
+      .eq('id', exercicioId));
+  } else {
+    // Inserir (sempre em exercicios_geral)
+    ({ error } = await supabase
+      .from('exercicios_geral')
+      .insert([dados]));
+  }
+
+  if (error) {
+    document.getElementById('exerciciosError').textContent = 'Erro: ' + error.message;
+    return;
+  }
+
   modalExercicio.hide();
-  carregarExerciciosAcademia();
+  document.getElementById('formExercicio').reset();
+  await carregarExercicios();
 });
 
-window.excluirExercicio = async function(id) {
-  if (!confirm("Excluir este exercício?")) return;
-  await supabase.from('exercicios_academia').delete().eq('id', id);
-  carregarExerciciosAcademia();
-};
+// Nome da academia no sidebar
+async function carregarNomeAcademia() {
+  const { data } = await supabase
+    .from('academias')
+    .select('nome')
+    .eq('id', academiaId)
+    .single();
+  if (data) {
+    document.getElementById('nomeAcademiaSidebar').textContent = data.nome;
+  }
+}
 
-document.getElementById('buscaExercicio').addEventListener('input', () => {
-  carregarExerciciosGeral();
-  carregarExerciciosAcademia();
-});
-
+// Inicialização
 window.addEventListener('DOMContentLoaded', async () => {
   await getAcademiaId();
-  carregarExerciciosGeral();
-  carregarExerciciosAcademia();
+  await carregarNomeAcademia();
+  modalExercicio = new bootstrap.Modal(document.getElementById('modalExercicio'));
+  await carregarExercicios();
 });
-
-// --- BUSCA E ATUALIZA O NOME DA ACADEMIA NO SIDEBAR ---
-async function atualizarSidebarNomeAcademia() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user?.id) return;
-    // Se tabela for 'academias', ajuste aqui
-    const { data } = await supabase
-      .from('academias')
-      .select('nome')
-      .eq('id', user.id)
-      .single();
-    if (data?.nome) {
-      document.getElementById('nomeAcademiaSidebar').textContent = data.nome;
-    }
-  }
-  
-  window.addEventListener('DOMContentLoaded', atualizarSidebarNomeAcademia);
-  
