@@ -46,27 +46,47 @@
         <div id="exerciciosError" class="text-danger mt-2"></div>
         
         <!-- Modal cadastro/edição -->
-        <div class="modal fade" id="modalExercicio" tabindex="-1">
-          <div class="modal-dialog">
-            <form class="modal-content" id="formExercicio">
-              <div class="modal-header">
-                <h5 class="modal-title" id="tituloModalExercicio">Cadastrar Exercício</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-              </div>
-              <div class="modal-body">
-                <input type="hidden" id="exercicioId">
-                <input type="text" class="form-control mb-2" id="nome" placeholder="Nome" required>
-                <input type="text" class="form-control mb-2" id="grupo_muscular" placeholder="Grupo muscular" required>
-                <input type="url" class="form-control mb-2" id="video_url" placeholder="Link vídeo (opcional)">
-                <textarea class="form-control mb-2" id="descricao" placeholder="Descrição (opcional)"></textarea>
-              </div>
-              <div class="modal-footer">
-                <button type="submit" class="btn btn-primary">Salvar</button>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-              </div>
-            </form>
-          </div>
-        </div>
+<div class="modal fade" id="modalExercicio" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content" id="formExercicio">
+      <div class="modal-header">
+        <h5 class="modal-title" id="tituloModalExercicio">Cadastrar Exercício</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="exercicioId">
+        <input type="text" class="form-control mb-2" id="nome" placeholder="Nome" required>
+        
+        <label class="form-label fw-bold">Grupo muscular:</label>
+        <select class="form-select mb-2" id="grupo_muscular" required>
+          <option value="">Selecione um grupo muscular</option>
+          <option value="Abdutores">Abdutores</option>
+          <option value="Adutores">Adutores</option>
+          <option value="Bíceps">Bíceps</option>
+          <option value="Core">Core</option>
+          <option value="Costas">Costas</option>
+          <option value="Glúteos">Glúteos</option>
+          <option value="Ombros">Ombros</option>
+          <option value="Panturrilhas">Panturrilhas</option>
+          <option value="Peitoral">Peitoral</option>
+          <option value="Pernas">Pernas</option>
+          <option value="Posterior de coxa">Posterior de coxa</option>
+          <option value="Quadríceps">Quadríceps</option>
+          <option value="Tibial anterior">Tibial anterior</option>
+          <option value="Trapézio">Trapézio</option>
+          <option value="Tríceps">Tríceps</option>
+        </select>
+        
+        <input type="url" class="form-control mb-2" id="video_url" placeholder="Link vídeo (opcional)">
+        <textarea class="form-control mb-2" id="descricao" placeholder="Descrição (opcional)"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">Salvar</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
       </div>
     </main>
   </div>
