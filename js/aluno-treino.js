@@ -160,19 +160,24 @@ window.removerExercicio = function(tIndex, eIndex) {
 window.abrirModalExercicio = function(tIndex) {
   document.getElementById('treinoLetraAtual').value = tIndex;
   
-  // Define o nome padrão no input
   const nomeTreino = letrasPersonalizadas[tIndex].nome;
   document.getElementById('inputNomeTreino').value = nomeTreino;
   
-  // Limpa os campos
   document.getElementById('selectGrupoMuscular').value = 'todos';
   document.getElementById('selectExercicio').value = '';
   document.getElementById('inputSeries').value = '';
   filtrarExerciciosPorGrupo();
   
-  // Abre o modal
+  const modalElement = document.getElementById('modalAdicionarExercicio');
+  
+  // Remove listeners antigos para evitar duplicação
+  modalElement.removeAttribute('aria-hidden');
+  
   if (!modalBootstrap) {
-    modalBootstrap = new bootstrap.Modal(document.getElementById('modalAdicionarExercicio'));
+    modalBootstrap = new bootstrap.Modal(modalElement, {
+      backdrop: 'static',
+      keyboard: false
+    });
   }
   modalBootstrap.show();
 };
@@ -194,12 +199,10 @@ window.adicionarExercicioAoTreino = function() {
     return;
   }
   
-  // Atualiza o nome do treino
   if (nomeTreino) {
     letrasPersonalizadas[tIndex].nome = nomeTreino;
   }
   
-  // Processa as séries (repetições)
   const repeticoes = seriesInput.split(',').map(s => s.trim()).filter(Boolean);
   
   if (repeticoes.length === 0) {
@@ -207,7 +210,6 @@ window.adicionarExercicioAoTreino = function() {
     return;
   }
   
-  // Pega o nome do exercício
   const exercicio = exerciciosDisponiveis.find(e => e.id === exercicioId);
   
   if (!exercicio) {
@@ -224,17 +226,17 @@ window.adicionarExercicioAoTreino = function() {
   
   renderLetrasPersonalizadas();
   
-  // ✅ Fecha o modal corretamente
-  const modalElement = document.getElementById('modalAdicionarExercicio');
-  const modal = bootstrap.Modal.getInstance(modalElement);
-  if (modal) {
-    modal.hide();
+  // ✅ Fecha sem erros
+  if (modalBootstrap) {
+    modalBootstrap.hide();
+    
+    // Aguarda um pouco e depois limpa
+    setTimeout(() => {
+      document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+      document.body.classList.remove('modal-open');
+      document.body.style.removeProperty('padding-right');
+    }, 200);
   }
-  
-  // Remove o backdrop manualmente (caso fique travado)
-  document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-  document.body.classList.remove('modal-open');
-  document.body.style.removeProperty('padding-right');
 };
 
 // Salvar treino para aluno
