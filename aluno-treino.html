@@ -30,18 +30,61 @@
       <select id="selectTreinoPronto" class="form-select"></select>
     </div>
     
-    <!-- Aqui só fica a área dinâmica do treino personalizado -->
+    <!-- Área do treino personalizado -->
     <div id="areaPersonalizado" class="mb-4" style="display:none;">
       <div id="listarTreinosLetras"></div>
       <button type="button" id="btnAdicionarLetra" class="btn btn-secondary btn-sm mt-2">Adicionar Treino (A, B, ...)</button>
-      <!-- NÃO coloque nenhum form fixo de exercício/séries/repetições aqui! -->
+    </div>
+
+    <!-- Modal para adicionar exercício -->
+    <div class="modal fade" id="modalAdicionarExercicio" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Adicionar Exercício</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="treinoLetraAtual">
+            
+            <div class="mb-3">
+              <label class="form-label fw-bold">Nome do Treino:</label>
+              <input type="text" id="inputNomeTreino" class="form-control" placeholder="Ex: Treino A, Peito e Tríceps...">
+              <small class="text-muted">Este nome aparecerá no app do aluno</small>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Grupo Muscular:</label>
+              <select id="selectGrupoMuscular" class="form-select">
+                <option value="todos">Todos</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Exercício:</label>
+              <select id="selectExercicio" class="form-select">
+                <option value="">Selecione um exercício</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Séries (separadas por vírgula):</label>
+              <input type="text" id="inputSeries" class="form-control" placeholder="Ex: 12,10,8,8">
+              <small class="text-muted">Exemplo: 12,10,8,8 para 4 séries</small>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" onclick="adicionarExercicioAoTreino()">Adicionar</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="mb-3">
-        <label for="dataValidadeTreino" class="form-label">Data de validade do treino:</label>
-        <input type="date" id="dataValidadeTreino" class="form-control">
-      </div>
-      
+      <label for="dataValidadeTreino" class="form-label">Data de validade do treino:</label>
+      <input type="date" id="dataValidadeTreino" class="form-control">
+    </div>
     
     <button type="button" id="btnSalvarTreino" class="btn btn-primary">Salvar Treino para Aluno</button>
     <a href="aluno-detalhes.html" id="voltarAluno" class="btn btn-secondary ms-2">Voltar</a>
@@ -49,7 +92,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-client.js"></script>
-  <script src="js/aluno-treino.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/aluno-treino.js"></script>
 </body>
 </html>
