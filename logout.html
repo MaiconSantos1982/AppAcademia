@@ -10,8 +10,14 @@
   <script src="js/supabase-client.js"></script>
   <script>
     async function logout() {
-      await supabase.auth.signOut();
-      window.location.href = 'login-academia.html';
+      try {
+        await supabase.auth.signOut();
+        console.log('Logout realizado com sucesso');
+      } catch (error) {
+        console.error('Erro ao fazer logout:', error);
+      }
+      // Redireciona para a página de login (index.html)
+      window.location.href = './index.html';
     }
     logout();
   </script>
