@@ -1,7 +1,6 @@
 let academiaId = null;
 let alunoId = null;
 let aluno = null;
-let treinosProntos = [];
 let exerciciosDisponiveis = [];
 let gruposMusculares = [];
 let treinosPersonalizados = [];
@@ -29,18 +28,6 @@ async function carregarAluno() {
     .single();
   aluno = data;
   document.getElementById('alunoInfo').innerHTML = `<strong>Aluno:</strong> ${aluno.nome} (${aluno.email})`;
-}
-
-async function carregarTreinosProntos() {
-  const { data } = await supabase
-    .from('treinos_prontos')
-    .select('*')
-    .eq('academia_id', academiaId);
-  treinosProntos = data || [];
-  const select = document.getElementById('selectTreinoPronto');
-  select.innerHTML = treinosProntos.map(t =>
-    `<option value="${t.id}">${t.nome} [${t.categoria}]</option>`
-  ).join('');
 }
 
 // Carrega exercícios apenas de exercicios_geral
@@ -89,13 +76,6 @@ function filtrarExerciciosPorGrupo() {
     selectExercicio.innerHTML += `<option value="${ex.id}">${ex.nome} [${ex.grupo_muscular}]</option>`;
   });
 }
-
-// Alternância tipo de treino
-document.getElementById('formTipoTreino').addEventListener('change', () => {
-  const tipo = document.querySelector('input[name="tipoTreino"]:checked').value;
-  document.getElementById('areaTreinoPronto').style.display = tipo === 'pronto' ? 'block' : 'none';
-  document.getElementById('areaPersonalizado').style.display = tipo === 'personalizado' ? 'block' : 'none';
-});
 
 // Adicionar novo treino
 document.getElementById('btnAdicionarLetra').addEventListener('click', () => {
@@ -240,28 +220,8 @@ window.adicionarExercicioAoTreino = function() {
 
 // Salvar treino para aluno
 document.getElementById('btnSalvarTreino').addEventListener('click', async () => {
-  const tipo = document.querySelector('input[name="tipoTreino"]:checked').value;
   const dataExpiracao = document.getElementById('dataValidadeTreino').value || null;
 
-  if (tipo === 'pronto') {
-    const treinoProntoId = document.getElementById('selectTreinoPronto').value;
-    const { error } = await supabase.from('alunos_treinos').insert([{
-      aluno_id: alunoId,
-      academia_id: academiaId,
-      tipo_treino: 'pronto',
-      treino_pronto_id: treinoProntoId,
-      ativo: true,
-      data_expiracao: dataExpiracao
-    }]);
-    if (error) {
-      document.getElementById('cadastroTreinoError').textContent = error.message;
-      return;
-    }
-    window.location.href = `aluno-detalhes.html?id=${alunoId}`;
-    return;
-  }
-
-  // Personalizado
   if (treinosPersonalizados.length === 0) {
     document.getElementById('cadastroTreinoError').textContent = 'Adicione pelo menos um treino com exercício.';
     return;
@@ -300,7 +260,7 @@ document.getElementById('btnSalvarTreino').addEventListener('click', async () =>
       
       const { error: errEx } = await supabase.from('alunos_treinos_exercicios').insert([{
         aluno_treino_id: alunoTreinoId,
-        treino_letra: treinoObj.nome,  // ✅ Salva nome personalizado ao invés de letra
+        treino_letra: treinoObj.nome,
         exercicio_id: ex.id,
         exercicio_tipo: 'geral',
         ordem: eInd + 1,
@@ -320,6 +280,5 @@ window.addEventListener('DOMContentLoaded', async () => {
   await getAcademiaId();
   getAlunoIdFromUrl();
   await carregarAluno();
-  await carregarTreinosProntos();
   await carregarExercicios();
 });
