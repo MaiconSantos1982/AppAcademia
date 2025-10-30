@@ -159,9 +159,7 @@ window.duplicarTreino = async function(treinoId, nomeOriginal) {
   window.location.reload();
 };
 
-// Modal simples para edição do treino
-// ...DEFESA DO CONTEXTO E FUNÇÕES JÁ EXISTENTES MANTIDAS...
-
+// Editar treino com adição de novos treinos
 window.editarTreino = async function(treinoId) {
     // Busca os dados do treino e seus exercícios
     const { data: treino } = await supabase.from('alunos_treinos').select('*').eq('id', treinoId).single();
@@ -235,11 +233,14 @@ window.editarTreino = async function(treinoId) {
           <label class="form-label">Nome:</label>
           <input type="text" id="editNomeTreino" class="form-control mb-2" value="${treino.nome_personalizado||''}">
           <label class="form-label">Validade:</label>
-          <input type="date" id="editValidadeTreino" class="form-control mb-2" 
+          <input type="date" id="editValidadeTreino" class="form-control mb-3" 
             value="${treino.data_expiracao ? treino.data_expiracao.substr(0,10) : ''}">
+          
           <div id="editarBlocoLetras">
             ${blocoLetras}
           </div>
+          
+          <button class="btn btn-secondary btn-sm mt-3" id="btnAdicionarNovoTreinoEditar">+ Adicionar Novo Treino</button>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" id="closeEditarModal">Cancelar</button>
@@ -258,7 +259,58 @@ window.editarTreino = async function(treinoId) {
       };
     });
   
-    // Função para adicionar linha de exercício em edição (reaproveita selects montados acima)
+    // ✅ Função para adicionar novo treino na edição
+    window.adicionarNovoTreinoEditar = function() {
+      const nomeTreino = prompt('Digite o nome do novo treino:');
+      if (!nomeTreino) return;
+      
+      const selectGeral = geral.map(x=> `<option value="${x.id},geral">${x.nome} [${x.grupo_muscular}]</option>`).join('');
+      const selectAcad = academia.map(x=> `<option value="${x.id},academia">${x.nome} [${x.grupo_muscular}]</option>`).join('');
+      
+      const novoCard = `
+        <div class="card mb-2">
+          <div class="card-body">
+            <h6>${nomeTreino}</h6>
+            <div id="editarListaExercicios${nomeTreino}">
+              <div class="row align-items-end mb-2 editarExercicioLinha" data-letra="${nomeTreino}">
+                <div class="col-md-5">
+                  <label class="form-label mb-0">Exercício:</label>
+                  <select class="form-select editarExercicioNome">${selectGeral+selectAcad}</select>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label mb-0">Séries:</label>
+                  <input type="number" class="form-control editarExercicioSeries" value="1">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label mb-0">Repetições:</label>
+                  <input type="text" class="form-control editarExercicioRepeticoes" value="">
+                </div>
+                <div class="col-md-1">
+                  <button type="button" class="btn btn-outline-danger btn-sm editarExercicioRemover">X</button>
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-outline-success btn-sm mt-2" onclick="adicionarLinhaExercicioEditar('${nomeTreino}')">Adicionar Exercício</button>
+            <button class="btn btn-outline-danger btn-sm mt-2" onclick="removerCardTreino(this)">Remover Treino</button>
+          </div>
+        </div>
+      `;
+      document.getElementById('editarBlocoLetras').insertAdjacentHTML('beforeend', novoCard);
+      
+      // Adiciona evento de remover
+      document.querySelectorAll('.editarExercicioRemover').forEach(btn=>{
+        btn.onclick = function() { this.closest('.editarExercicioLinha').remove(); };
+      });
+    };
+    
+    // ✅ Função para remover card de treino
+    window.removerCardTreino = function(btn) {
+      if (confirm('Deseja remover este treino e todos seus exercícios?')) {
+        btn.closest('.card').remove();
+      }
+    };
+  
+    // Função para adicionar linha de exercício em edição
     window.adicionarLinhaExercicioEditar = function(letra) {
       const selectGeral = geral.map(x=> `<option value="${x.id},geral">${x.nome} [${x.grupo_muscular}]</option>`).join('');
       const selectAcad = academia.map(x=> `<option value="${x.id},academia">${x.nome} [${x.grupo_muscular}]</option>`).join('');
@@ -287,6 +339,9 @@ window.editarTreino = async function(treinoId) {
       });
     };
   
+    // ✅ Evento do botão de adicionar novo treino
+    document.getElementById('btnAdicionarNovoTreinoEditar').onclick = adicionarNovoTreinoEditar;
+    
     document.getElementById('closeEditarModal').onclick = () => {
       document.getElementById('editarTreinoModal').remove();
     };
@@ -305,19 +360,23 @@ window.editarTreino = async function(treinoId) {
       await supabase.from('alunos_treinos_exercicios').delete().eq('aluno_treino_id', treinoId);
   
       // 3. Insere exercícios novos (conforme campos)
-      const blocos = document.querySelectorAll('.card-body > #editarListaExercicios' + ' div.editarExercicioLinha');
       let blocosPorLetra = {};
       document.querySelectorAll('.card-body').forEach(card=> {
-        let letra = card.querySelector('h6')?.innerText.replace('Treino ','').trim() || 'A';
+        let letra = card.querySelector('h6')?.innerText.trim() || 'A';
         blocosPorLetra[letra] = card.querySelectorAll('.editarExercicioLinha');
       });
+      
       for (let letra in blocosPorLetra) {
         let linhas = blocosPorLetra[letra];
         let ordem = 1;
         for (const linha of linhas) {
-          const [exercicio_id, exercicio_tipo] = linha.querySelector('.editarExercicioNome').value.split(',');
+          const selectValue = linha.querySelector('.editarExercicioNome').value;
+          if (!selectValue) continue;
+          
+          const [exercicio_id, exercicio_tipo] = selectValue.split(',');
           const series = Number(linha.querySelector('.editarExercicioSeries').value);
           const repeticoes = linha.querySelector('.editarExercicioRepeticoes').value.split(',').map(x => x.trim()).filter(Boolean);
+          
           await supabase.from('alunos_treinos_exercicios').insert([{
             aluno_treino_id: treinoId,
             treino_letra: letra,
@@ -342,4 +401,3 @@ window.editarTreino = async function(treinoId) {
     getAlunoIdFromUrl();
     await carregarDadosAluno();
   });
-  
