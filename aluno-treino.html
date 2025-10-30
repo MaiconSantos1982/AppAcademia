@@ -33,11 +33,10 @@
     <!-- Área do treino personalizado -->
     <div id="areaPersonalizado" class="mb-4" style="display:none;">
       <div id="listarTreinosLetras"></div>
-      <button type="button" id="btnAdicionarLetra" class="btn btn-secondary btn-sm mt-2">Adicionar Treino (A, B, ...)</button>
+      <button type="button" id="btnAdicionarLetra" class="btn btn-secondary btn-sm mt-2">Adicionar Treino</button>
     </div>
 
     <!-- Modal para adicionar exercício -->
-    <!-- DEPOIS -->
     <div class="modal fade" id="modalAdicionarExercicio" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
@@ -46,14 +45,8 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <input type="hidden" id="treinoLetraAtual">
+            <input type="hidden" id="treinoIndexAtual">
             
-            <div class="mb-3">
-              <label class="form-label fw-bold">Nome do Treino:</label>
-              <input type="text" id="inputNomeTreino" class="form-control" placeholder="Ex: Treino A, Peito e Tríceps...">
-              <small class="text-muted">Este nome aparecerá no app do aluno</small>
-            </div>
-
             <div class="mb-3">
               <label class="form-label fw-bold">Grupo Muscular:</label>
               <select id="selectGrupoMuscular" class="form-select">
@@ -76,7 +69,7 @@
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-primary" onclick="adicionarExercicioAoTreino()">Adicionar</button>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-secondary" onclick="fecharModalExercicio()">Cancelar</button>
           </div>
         </div>
       </div>
